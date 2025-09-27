@@ -85,12 +85,14 @@ app.get('/api/health', (req: Request, res: Response) => {
 });
 
 // 404 handler
-app.use('/api/*', (req: Request, res: Response) => {
+app.use(/^\/api\/.*/, (req: Request, res: Response) => {
   res.status(404).json({
     success: false,
     message: 'API endpoint not found'
   });
 });
+
+
 
 // Error handling middleware
 app.use(errorHandler);
