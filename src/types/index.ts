@@ -78,7 +78,7 @@ export interface ITask extends Document {
   taskNumber: number;
   taskId: string;
   project: Types.ObjectId | IProject;
-  assignee?: Types.ObjectId | IUser;
+  assignee: Types.ObjectId | IUser | undefined;
   reporter: Types.ObjectId | IUser;
   status: 'todo' | 'in-progress' | 'review' | 'done';
   priority: 'low' | 'medium' | 'high' | 'critical';
@@ -135,7 +135,12 @@ export interface INotification extends Document {
   updatedAt: Date;
 }
 
-export interface AuthenticatedRequest extends Request {
+export interface AuthenticatedRequest<
+  P = any,
+  ResBody = any,
+  ReqBody = any,
+  ReqQuery = any
+> extends Request<P, ResBody, ReqBody, ReqQuery> {
   user: IUser;
   io: Server;
 }
