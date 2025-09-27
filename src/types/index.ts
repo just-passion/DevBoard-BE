@@ -172,3 +172,19 @@ export interface AuthenticatedSocket {
     };
   };
 }
+
+// src/types/index.ts - Add this interface to your existing types
+export interface IProjectInvitation extends Document {
+  _id: Types.ObjectId;
+  email: string;
+  project: Types.ObjectId | IProject;
+  invitedBy: Types.ObjectId | IUser;
+  role: 'admin' | 'member' | 'viewer';
+  token: string;
+  status: 'pending' | 'accepted' | 'declined' | 'expired';
+  expiresAt: Date;
+  acceptedAt?: Date;
+  acceptedBy?: Types.ObjectId | IUser;
+  createdAt: Date;
+  updatedAt: Date;
+}

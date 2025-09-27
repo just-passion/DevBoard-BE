@@ -1,3 +1,4 @@
+// src/server.ts - Updated version
 import express, { Application, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -11,14 +12,20 @@ import connectDB from './config/database';
 import authRoutes from './routes/auth';
 import projectRoutes from './routes/projects';
 import taskRoutes from './routes/tasks';
-import commentRoutes from './routes/comments'
+import commentRoutes from './routes/comments';
 import notificationRoutes from './routes/notifications';
+import invitationRoutes from './routes/invitations';
 import uploadRoutes from './routes/upload';
 import { errorHandler } from './middleware/errorHandler';
 import { setupSocket } from './socket/socketManager';
 import { AuthenticatedRequest } from './types';
 
 dotenv.config();
+
+console.log('SMTP_USER:', process.env.SMTP_USER);
+console.log('SMTP_PASSWORD length:', process.env.SMTP_PASSWORD?.length);
+console.log('SMTP_SECURE:', process.env.SMTP_SECURE);
+console.log('SMTP_PORT:', process.env.SMTP_PORT);
 
 const app: Application = express();
 const server = createServer(app);
@@ -73,6 +80,7 @@ app.use('/api/projects', projectRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/invitations', invitationRoutes);
 app.use('/api/upload', uploadRoutes);
 
 // Health check endpoint
@@ -80,19 +88,34 @@ app.get('/api/health', (req: Request, res: Response) => {
   res.status(200).json({
     status: 'OK',
     message: 'DevBoard API is running',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
   });
 });
 
-// 404 handler
+// Email service health check
+app.get('/api/health/email', (req: Request, res: Response) => {
+  const emailConfig = {
+    host: process.env.SMTP_HOST,
+    port: process.env.SMTP_PORT,
+    secure: process.env.SMTP_SECURE,
+    user: process.env.SMTP_USER ? '***configured***' : 'not configured'
+  };
+
+  res.status(200).json({
+    status: 'OK',
+    message: 'Email service configuration',
+    config: emailConfig
+  });
+});
+
+// 404 handler for API routes
 app.use(/^\/api\/.*/, (req: Request, res: Response) => {
   res.status(404).json({
     success: false,
     message: 'API endpoint not found'
   });
 });
-
-
 
 // Error handling middleware
 app.use(errorHandler);
@@ -103,8 +126,25 @@ setupSocket(io);
 const PORT: number = parseInt(process.env.PORT || '5000', 10);
 
 server.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🚀 Server is running on port ${PORT}`);
+  console.log(`📧 Environment: ${process.env.NODE_ENV || 'development'}`);
+  
+  // Log email configuration status
+  const emailConfigured = !!(
+    process.env.SMTP_HOST &&
+    process.env.SMTP_USER &&
+    process.env.SMTP_PASSWORD
+  );
+  console.log(`📧 Email service: ${emailConfigured ? '✅ Configured' : '❌ Not configured'}`);
+  
+  if (!emailConfigured) {
+    console.log('⚠️  Email invitations will not work. Please configure SMTP settings:');
+    console.log('   - SMTP_HOST');
+    console.log('   - SMTP_PORT');
+    console.log('   - SMTP_USER');
+    console.log('   - SMTP_PASSWORD');
+    console.log('   - SMTP_FROM (optional)');
+  }
 });
 
 // Graceful shutdown
