@@ -1,6 +1,14 @@
 import { Document, Types } from 'mongoose';
 import type { Request } from 'express';
 import { Server } from 'socket.io';
+import 'socket.io';
+
+// types/socket.d.ts (or inside your types/index.d.ts)
+declare module 'socket.io' {
+  interface Socket {
+    user?: SocketUser; // make it optional initially
+  }
+}
 
 export interface IUser extends Document {
   _id: Types.ObjectId;
